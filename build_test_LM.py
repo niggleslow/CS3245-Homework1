@@ -6,18 +6,12 @@ import nltk
 import sys
 import getopt
 
-"""
-Final static values
-"""
+#CONSTANT VALUES
 NGRAM_SIZE = 4
 MALAY = 'malaysian'
 TAMIL = 'tamil'
 INDONESIAN = 'indonesian'
-
-
-"""
-Helper functions used in build_LM
-"""
+OTHER_THRESHOLD = 0.5
 
 def extract_Language(line):
     language = line.split()[0].lower()
@@ -33,14 +27,17 @@ def create_NPadding(sizeOfN):
         tempList.append(None)
     return tempList
 
-def construct_ngrams(sizeOfN, inputLine, padding=True):
+def construct_ngrams(sizeOfN, inputLine, padding=True, charTok=True):
     currentNgrams = []
-    tokenized = list(inputLine)
+    if charTok == True:
+        tokenized = list(inputLine)
+    else:
+        tokenized = inputLine.split()
     pad = create_NPadding(sizeOfN)
     tokenized = pad + tokenized + pad
     firstPos = 0
     secondPos = sizeOfN
-    for count in range(0, len(inputLine)+sizeOfN-1):
+    for count in range(0, len(tokenized)-(sizeOfN-1)):
         ngram = tokenized[firstPos:secondPos]
         currentNgrams.append(tuple(ngram))
         firstPos += 1
@@ -66,46 +63,6 @@ def handle_currentLine(currentLine, langs):
     langs = populate_LM(language, currentNgrams, langs)
     return langs
 
-def build_LM(in_file):
-    """
-    build language models for each label
-    each line in in_file contains a label and an URL separated by a tab(\t)
-    """
-    print 'building language models...'
-    
-    # Initialise defaultdict for each language, default value is set to 1 to handle one-smoothing
-    
-    malaysian = defaultdict(lambda: 1)
-    indonesian = defaultdict(lambda: 1)
-    tamil = defaultdict(lambda: 1)
-    languages = [malaysian, indonesian, tamil]
-    #count = 1
-    with open(in_file) as f:
-        for line in f:
-            languages = handle_currentLine(line, languages)
-            #print count
-            #count += 1
-            #for l in languages:
-                #print len(l)
-    return languages
-
-def test_LM(in_file, out_file, LM):
-    """
-    test the language models on new URLs
-    each line of in_file contains an URL
-    you should print the most probable label for each URL into out_file
-    """
-    print "testing language models..."
-    # This is an empty method
-    # Pls implement your code in below
-    outputFile = open(out_file, 'w')
-    #Reading the test file
-    with open(in_file) as f:
-        for line in f:
-            toBeWritten = calculate_Probability(line, LM)
-            outputFile.write(toBeWritten)
-    outputFile.close()
-
 def calculate_Probability(inputLine, LM):
     queryNgrams = construct_ngrams(NGRAM_SIZE, inputLine)
     unregistered_ngrams = 0 #keeps track of ngrams that are in queried line but not in training file
@@ -120,19 +77,54 @@ def calculate_Probability(inputLine, LM):
     #Iterate through the queried ngrams and calculate probabilties for each of the langauges (using log sum to prevent underflow issue)
     for gram in queryNgrams:
         if gram in LM[0]:
+            #print gram
             probMalaysian += log(LM[0][gram]/float(sizeOfMalaysian))
             probIndonesian += log(LM[1][gram]/float(sizeOfIndonesian))
             probTamil += log(LM[2][gram]/float(sizeOfTamil))
         else:
             unregistered_ngrams += 1
-    #Creating results string
-    if max(probMalaysian, probIndonesian, probTamil) == probMalaysian:
-        toBeWritten = 'malaysian ' + inputLine
-    elif max(probMalaysian, probIndonesian, probTamil) == probIndonesian:
-        toBeWritten = 'indonesian ' + inputLine
-    elif max(probMalaysian, probIndonesian, probTamil) == probTamil:
-        toBeWritten = 'tamil ' + inputLine
+    #Calculating probabilty of whether language is of 'Other' type
+    probAlien = unregistered_ngrams/float(len(queryNgrams))
+    if probAlien >= OTHER_THRESHOLD:
+        toBeWritten = 'other ' + inputLine
+    else:
+        if max(probMalaysian, probIndonesian, probTamil) == probMalaysian:
+            toBeWritten = 'malaysian ' + inputLine
+        elif max(probMalaysian, probIndonesian, probTamil) == probIndonesian:
+            toBeWritten = 'indonesian ' + inputLine
+        elif max(probMalaysian, probIndonesian, probTamil) == probTamil:
+            toBeWritten = 'tamil ' + inputLine
     return toBeWritten
+
+def build_LM(in_file):
+    """
+    build language models for each label
+    each line in in_file contains a label and an URL separated by a tab(\t)
+    """
+    print 'building language models...'
+    # Initialise defaultdict for each language, default value is set to 1 to handle one-smoothing
+    malaysian = defaultdict(lambda: 1)
+    indonesian = defaultdict(lambda: 1)
+    tamil = defaultdict(lambda: 1)
+    languages = [malaysian, indonesian, tamil]
+    with open(in_file) as f:
+        for line in f:
+            languages = handle_currentLine(line, languages)
+    return languages
+
+def test_LM(in_file, out_file, LM):
+    """
+    test the language models on new URLs
+    each line of in_file contains an URL
+    you should print the most probable label for each URL into out_file
+    """
+    print "testing language models..."
+    outputFile = open(out_file, 'w')
+    with open(in_file) as f:
+        for line in f:
+            toBeWritten = calculate_Probability(line, LM)
+            outputFile.write(toBeWritten)
+    outputFile.close()
 
 def usage():
     print "usage: " + sys.argv[0] + " -b input-file-for-building-LM -t input-file-for-testing-LM -o output-file"

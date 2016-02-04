@@ -1,18 +1,36 @@
-Replace this file with the answers to the essay questions here.
-----------------------------------------------------------------------
+1. 
+Yes, I would expect token-based ngram models to perform better as compared to character-based ones.
+This is because token-based ngram models are able to better differentiate between various languages through the context of words when they are used in phrases. 
+An example would be the word "die", where if we used character-based ngram models, we would get a match for both English and German. However, if we used token-based ngram models instead, the context in which the word is used i.e. "die entschuldigung" will allow our LM to recognise that the "die" is of the German language.
 
-1. In the homework assignment, we are using character-based ngrams,
-i.e., the gram units are characters. Do you expect token-based ngram
-models to perform better?
+One thing to note is that with token-based ngram models, we would require a much larger training set in order to capture all/as much as possible of the various contexts and nuances of each individual language. This observation came after I tried using token-based ngram modelling instead of character-based with the attached training set and all of the test lines were recognized as "other" languages, where only the ngrams such as (START, START, START, 'Sebelumnya') and ('ini.', END, END, END) were able to be matched.
 
-2. What do you think will happen if we provided more data for each
-category for you to build the language models? What if we only
-provided more data for Indonesian?
 
-3. What do you think will happen if you strip out punctuations and/or
-numbers? What about converting upper case characters to lower case?
+2. 
+With more training data provided for each language, I think that we will be able to observe an increase in the accuracy with which the built language models differentiate between languages. 
 
-4. We use 4-gram models in this homework assignment. What do you think
-will happen if we varied the ngram size, such as using unigrams,
-bigrams and trigrams?
+If more data is only provided for Indonesian, I think we would be able to better differentiate the Indonesian language from the others. However, the ability to differentiate an unlabelled string between the other languages would most likely not see an increase in accuracy.
 
+
+3.
+I think stripping away numbers will not make much of a difference. 
+However, punctuations are a different matter as they can actually serve as identifiers for certain languages. An example would be the phrase "Mr Hasting's pen", where the apostrophe in "Hasting's" serve a semantic meaning of the pen belonging to Mr Hasting in the English language. Hence, the stripping of all punctuation might have an adverse effect on the accuracy of differentiation for some of the languages.
+Converting upper case characters to lower case should increase the number of matches since the language set in this homework are made of bicameral scripts, meaning that the language uses two separate cases where the casing is only used for "aid to clarity" - as revealed by a quick Wikipedia searc.
+
+
+4.
+The following results were captured with varying ngram sizes -
+
+NGRAM SIZE 	:	ACCURACY
+1 		 		9 / 20 (45.0%)
+2 			 	15 / 20 (75.0%)
+3 				19 / 20 (95.0%)
+4 				20 / 20 (100.0%)
+5				19 / 20 (95.0%)
+6 				17 / 20 (85.0%)
+
+From the data, I would that using too small or too large a ngram size are counterproductive to the accuracy of our language model. 
+
+For the case in which small ngram sizes are used, the accuracy suffers as we do not have enough information to tell apart the language where the ngram belongs to. An example would be a unigram of 'a' compared to a 4-gram of 'area', where with the 4-gram we are able to more conclusively say that it is the English language. With the unigram, we are less likely able to tell which language it is since many languages have 'a' in their character set.
+
+For the case in which large ngram sizes are used, the accuracy suffers as too much of the context is being brought in while the existing training data is not comprehensive enough. Hence, the tendency for "unseen" grams to be met increases and chances of misidentification of the unlabelled language as "other" languages increases as observed.
